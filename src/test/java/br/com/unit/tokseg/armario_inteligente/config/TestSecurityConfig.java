@@ -1,24 +1,31 @@
 package br.com.unit.tokseg.armario_inteligente.config;
 
 import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.web.SecurityFilterChain;
 import br.com.unit.tokseg.armario_inteligente.service.JwtService;
 import br.com.unit.tokseg.armario_inteligente.service.CustomUserDetailsService;
 
+import static org.mockito.Mockito.mock;
+
 @TestConfiguration
-@EnableWebSecurity
+@Profile("test")
 public class TestSecurityConfig {
 
-    @MockBean
-    private JwtService jwtService;
+    @Bean
+    @Primary
+    JwtService jwtService() {
+        return mock(JwtService.class);
+    }
 
-    @MockBean
-    private CustomUserDetailsService userDetailsService;
+    @Bean
+    @Primary
+    CustomUserDetailsService userDetailsService() {
+        return mock(CustomUserDetailsService.class);
+    }
 
     @Bean
     @Primary
@@ -28,8 +35,8 @@ public class TestSecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .anyRequest().permitAll()
             )
-            .headers(headers -> headers.frameOptions().disable());
+            .headers(headers -> headers.frameOptions(frame -> frame.disable()));
 
         return http.build();
     }
-} 
+}

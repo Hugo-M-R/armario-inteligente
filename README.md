@@ -41,8 +41,8 @@ O Armário Inteligente é uma solução completa para gerenciamento de armários
 
 ## 🛠️ Tecnologias Utilizadas
 
-- Java 17
-- Spring Boot 3.2.3
+- Java 25
+- Spring Boot 4.1.0
 - Spring Security com JWT
 - Spring Data JPA
 - PostgreSQL 15
@@ -189,7 +189,7 @@ Estas funcionalidades representam um roadmap para transformar o projeto acadêmi
 
 ## 📦 Pré-requisitos
 
-- JDK 17 ou superior
+- JDK 25 ou superior
 - Maven 3.8+
 - Docker e Docker Compose
 - IDE (recomendado: IntelliJ IDEA ou Eclipse)
