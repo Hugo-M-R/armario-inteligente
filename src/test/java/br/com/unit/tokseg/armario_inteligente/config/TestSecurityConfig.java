@@ -7,7 +7,6 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.SecurityFilterChain;
 import br.com.unit.tokseg.armario_inteligente.service.JwtService;
-import br.com.unit.tokseg.armario_inteligente.service.CustomUserDetailsService;
 
 import static org.mockito.Mockito.mock;
 
@@ -19,12 +18,6 @@ public class TestSecurityConfig {
     @Primary
     JwtService jwtService() {
         return mock(JwtService.class);
-    }
-
-    @Bean
-    @Primary
-    CustomUserDetailsService userDetailsService() {
-        return mock(CustomUserDetailsService.class);
     }
 
     @Bean

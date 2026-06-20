@@ -16,18 +16,7 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
 
-/**
- * Serviço responsável por gerenciar a autenticação e registro de usuários.
- * Implementa as operações de registro de novos usuários e autenticação de usuários existentes.
- * 
- * Este serviço:
- * - Registra novos usuários no sistema
- * - Autentica usuários existentes
- * - Gera tokens JWT para usuários autenticados
- * - Gerencia as permissões e papéis dos usuários
- */
 @Service
 public class AuthenticationService {
 
@@ -38,14 +27,6 @@ public class AuthenticationService {
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
 
-    /**
-     * Construtor que recebe as dependências necessárias via injeção de dependência.
-     * 
-     * @param usuarioRepository Repositório de usuários
-     * @param passwordEncoder Codificador de senhas
-     * @param jwtService Serviço JWT
-     * @param authenticationManager Gerenciador de autenticação
-     */
     public AuthenticationService(
             UsuarioRepository usuarioRepository,
             PasswordEncoder passwordEncoder,
@@ -57,85 +38,53 @@ public class AuthenticationService {
         this.authenticationManager = authenticationManager;
     }
 
-    /**
-     * Registra um novo usuário no sistema.
-     * 
-     * @param request Dados do usuário a ser registrado
-     * @return Resposta contendo o token JWT gerado
-     * @throws IllegalArgumentException se os dados do usuário forem inválidos
-     */
     @Auditavel(acao = "REGISTRO_USUARIO", detalhes = "Registro de novo usuário no sistema")
     @Transactional
     public AuthenticationResponse register(RegisterRequest request) {
-        logger.info("Iniciando registro de novo usuário: {}", request.getEmail());
+        logger.info("Iniciando registro de novo usuário: {}", request.email());
 
-        // Validação dos campos obrigatórios
-        if (!StringUtils.hasText(request.getNome()) || 
-            !StringUtils.hasText(request.getEmail()) || 
-            !StringUtils.hasText(request.getSenha())) {
-            logger.warn("Tentativa de registro com campos obrigatórios ausentes");
-            throw new IllegalArgumentException("Nome, email e senha são obrigatórios");
-        }
-
-        if (usuarioRepository.findByEmail(request.getEmail()).isPresent()) {
-            logger.warn("Tentativa de registro com email já existente: {}", request.getEmail());
+        if (usuarioRepository.findByEmail(request.email()).isPresent()) {
+            logger.warn("Tentativa de registro com email já existente: {}", request.email());
             throw new IllegalArgumentException("Email já cadastrado");
         }
 
         Usuario usuario = new Usuario();
-        usuario.setNome(request.getNome());
-        usuario.setEmail(request.getEmail());
-        usuario.setSenha(passwordEncoder.encode(request.getSenha()));
-        usuario.setTelefone(request.getTelefone());
-        usuario.setTipo(request.getTipo() != null ? request.getTipo() : TipoUsuarioEnum.MORADOR);
+        usuario.setNome(request.nome());
+        usuario.setEmail(request.email());
+        usuario.setSenha(passwordEncoder.encode(request.senha()));
+        usuario.setTelefone(request.telefone());
+        usuario.setTipo(request.tipo() != null ? request.tipo() : TipoUsuarioEnum.MORADOR);
 
         usuarioRepository.save(usuario);
         logger.info("Usuário registrado com sucesso: {}", usuario.getEmail());
 
         String jwtToken = jwtService.generateToken(usuario);
-        AuthenticationResponse response = new AuthenticationResponse();
-        response.setToken(jwtToken);
-        return response;
+        return new AuthenticationResponse(jwtToken);
     }
 
-    /**
-     * Autentica um usuário existente.
-     * 
-     * @param request Dados de autenticação do usuário
-     * @return Resposta contendo o token JWT gerado
-     * @throws IllegalArgumentException se as credenciais forem inválidas
-     */
     @Auditavel(acao = "LOGIN_USUARIO", detalhes = "Login de usuário no sistema")
     public AuthenticationResponse authenticate(AuthenticationRequest request) {
-        logger.info("Iniciando autenticação para usuário: {}", request.getEmail());
-
-        // Validação dos campos obrigatórios
-        if (!StringUtils.hasText(request.getEmail()) || !StringUtils.hasText(request.getSenha())) {
-            logger.warn("Tentativa de autenticação com campos obrigatórios ausentes");
-            throw new IllegalArgumentException("Email e senha são obrigatórios");
-        }
+        logger.info("Iniciando autenticação para usuário: {}", request.email());
 
         try {
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
-                            request.getEmail(),
-                            request.getSenha()
+                            request.email(),
+                            request.senha()
                     )
             );
 
-            Usuario usuario = usuarioRepository.findByEmail(request.getEmail())
+            Usuario usuario = usuarioRepository.findByEmail(request.email())
                     .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado"));
 
             String jwtToken = jwtService.generateToken(usuario);
             logger.info("Usuário autenticado com sucesso: {}", usuario.getEmail());
 
-            AuthenticationResponse response = new AuthenticationResponse();
-            response.setToken(jwtToken);
-            return response;
+            return new AuthenticationResponse(jwtToken);
 
         } catch (AuthenticationException e) {
-            logger.error("Falha na autenticação do usuário: {}", request.getEmail(), e);
+            logger.error("Falha na autenticação do usuário: {}", request.email(), e);
             throw new IllegalArgumentException("Credenciais inválidas");
         }
     }
-} 
+}

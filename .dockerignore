@@ -1,6 +1,5 @@
 target/
 .git/
-.mvn/
 *.iml
 *.log
-*.md 
+*.md

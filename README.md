@@ -1,6 +1,6 @@
 # Armário Inteligente
 
-Sistema de gerenciamento de armários inteligentes para condomínios, desenvolvido com Spring Boot e PostgreSQL.
+Sistema de gerenciamento de armários inteligentes para condomínios, desenvolvido com Spring Boot, PostgreSQL (Neon) e Redis.
 
 ## 📋 Descrição
 
@@ -45,7 +45,8 @@ O Armário Inteligente é uma solução completa para gerenciamento de armários
 - Spring Boot 4.1.0
 - Spring Security com JWT
 - Spring Data JPA
-- PostgreSQL 15
+- PostgreSQL (Neon)
+- Redis 8 (rate limit distribuído)
 - Flyway (Migração de banco de dados)
 - Lombok
 - Maven
@@ -192,6 +193,7 @@ Estas funcionalidades representam um roadmap para transformar o projeto acadêmi
 - JDK 25 ou superior
 - Maven 3.8+
 - Docker e Docker Compose
+- Banco PostgreSQL externo (ex.: Neon)
 - IDE (recomendado: IntelliJ IDEA ou Eclipse)
 - Postman (para testes da API)
 
@@ -203,15 +205,23 @@ git clone https://github.com/Tokseg/armario-inteligente.git
 cd armario-inteligente
 ```
 
-2. Execute com Docker:
+2. Configure as variáveis de ambiente:
 ```bash
-docker-compose up -d --build
+cp .env.example .env
+```
+
+3. Ajuste no arquivo `.env`:
+- `DATABASE_URL` para a URL JDBC do Neon (com `sslmode=require`)
+- `JWT_SECRET` com um segredo forte
+
+4. Execute com Docker:
+```bash
+docker compose up -d --build
 ```
 
 O sistema estará disponível em:
 - API: http://localhost:8080
-- PostgreSQL: localhost:5432
-- PgAdmin: http://localhost:5050 (opcional)
+- Redis: localhost:6379
 
 ## 📦 Estrutura do Projeto
 
@@ -236,10 +246,9 @@ O sistema estará disponível em:
 │   │       ├── application.properties
 │   │       └── application-docker.properties
 │   └── test/                       # Testes
-├── docker/                         # Configurações Docker
-│   ├── Dockerfile                 # Dockerfile da aplicação
-│   ├── docker-compose.yml         # Configuração dos containers
-│   └── init.sql                   # Script de inicialização do banco
+├── Dockerfile                     # Dockerfile da aplicação
+├── docker-compose.yml             # Configuração dos containers (app + redis)
+├── .dockerignore                  # Itens ignorados no build Docker
 ├── .gitignore                     # Arquivos ignorados pelo Git
 ├── .gitattributes                 # Configurações do Git
 ├── pom.xml                        # Configuração Maven
@@ -367,8 +376,9 @@ Authorization: Bearer {token}
 - Senhas criptografadas com BCrypt
 - Controle de acesso baseado em roles (ADMIN, PORTEIRO, MORADOR)
 - Validação de dados com Bean Validation
-- Proteção contra CSRF
-- Headers de segurança
+- Rate limit no endpoint público de autenticação (via Redis)
+- CORS com origins explícitas por configuração
+- Headers de segurança (CSP, HSTS configurável, X-Frame-Options, X-Content-Type-Options)
 - Registro de auditoria automático
 - Logs de segurança
 
@@ -389,7 +399,7 @@ mvn verify
 - Implementação do sistema de auditoria automática
 - Adição de notificações automáticas
 - Melhorias na segurança com JWT
-- Suporte a Docker com PostgreSQL
+- Suporte a Docker com Redis e PostgreSQL externo (Neon)
 - Migração de banco de dados com Flyway
 - Documentação atualizada com exemplos Postman
 

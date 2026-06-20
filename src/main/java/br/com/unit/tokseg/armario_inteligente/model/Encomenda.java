@@ -13,14 +13,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/**
- * Entidade que representa uma encomenda no sistema.
- * Uma encomenda pode estar associada a um armário e a um usuário.
- * 
- * Relacionamentos:
- * - Uma encomenda pertence a um armário (opcional)
- * - Uma encomenda pertence a um usuário (opcional)
- */
 @Entity
 @Table(name = "Encomenda")
 @Data
@@ -50,7 +42,6 @@ public class Encomenda {
     @JoinColumn(name = "idUsuario", referencedColumnName = "id")
     private Usuario usuario;
 
-    // Getters e Setters
     public String getIdEncomenda() {
         return idEncomenda;
     }

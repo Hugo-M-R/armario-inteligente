@@ -23,16 +23,6 @@ import java.util.List;
 import java.util.Collection;
 import java.util.stream.Collectors;
 
-/**
- * Filtro responsável por interceptar e processar requisições HTTP para autenticação JWT.
- * Este filtro é executado uma vez por requisição e verifica a presença e validade do token JWT.
- * 
- * O filtro:
- * 1. Intercepta todas as requisições HTTP
- * 2. Verifica se o cabeçalho Authorization contém um token JWT
- * 3. Valida o token e extrai as informações do usuário
- * 4. Configura o contexto de segurança com as informações do usuário autenticado
- */
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
@@ -43,12 +33,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtService jwtService;
     private final UserDetailsService userDetailsService;
 
-    /**
-     * Construtor que recebe as dependências necessárias via injeção de dependência.
-     * 
-     * @param jwtService Serviço JWT para manipulação de tokens
-     * @param userDetailsService Serviço para carregar detalhes do usuário
-     */
     public JwtAuthenticationFilter(JwtService jwtService, UserDetailsService userDetailsService) {
         this.jwtService = jwtService;
         this.userDetailsService = userDetailsService;
@@ -82,7 +66,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 if (jwtService.isTokenValid(jwt, userDetails)) {
                     logger.info("Token JWT válido para usuário: {}", userEmail);
                     
-                    // Extrair authorities do token
                     @SuppressWarnings("unchecked")
                     List<String> authorities = jwtService.extractClaim(jwt, claims -> 
                         (List<String>) claims.get("authorities"));
@@ -119,4 +102,4 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         filterChain.doFilter(request, response);
     }
-} 
+}

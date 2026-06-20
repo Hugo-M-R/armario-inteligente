@@ -14,37 +14,16 @@ import java.util.UUID;
 
 import br.com.unit.tokseg.armario_inteligente.annotation.Auditavel;
 
-/**
- * Serviço responsável pela lógica de negócios relacionada aos armários.
- * Implementa as operações de CRUD e regras específicas do domínio.
- * 
- * Este serviço é responsável por:
- * - Validar operações antes de persistir no banco
- * - Implementar regras de negócio específicas
- * - Coordenar operações entre diferentes repositórios
- * - Fornecer uma interface limpa para os controllers
- */
 @Service
 public class ArmarioService {
 
     private static final Logger logger = LoggerFactory.getLogger(ArmarioService.class);
     private final ArmarioRepository armarioRepository;
 
-    /**
-     * Construtor explícito para inicializar o repositório de armário.
-     * @param armarioRepository Repositório de armário a ser injetado
-     */
     public ArmarioService(ArmarioRepository armarioRepository) {
         this.armarioRepository = armarioRepository;
     }
 
-    /**
-     * Verifica se já existe um armário com o número especificado.
-     * 
-     * @param numero Número do armário a ser verificado
-     * @return true se o número já existe, false caso contrário
-     * @throws IllegalArgumentException se o número for nulo ou vazio
-     */
     public boolean existeNumero(String numero) {
         if (numero == null || numero.trim().isEmpty()) {
             throw new IllegalArgumentException("Número do armário não pode ser nulo ou vazio");
@@ -53,13 +32,6 @@ public class ArmarioService {
         return armarioRepository.existsByNumero(numero);
     }
 
-    /**
-     * Salva um novo armário no sistema.
-     * 
-     * @param armario Armário a ser salvo
-     * @return Armário salvo com ID gerado
-     * @throws IllegalArgumentException se o armário for nulo ou inválido
-     */
     @Auditavel(acao = "CADASTRO_ARMARIO", detalhes = "Cadastro de novo armário no sistema")
     @Transactional
     public Armario salvar(Armario armario) {
@@ -80,23 +52,11 @@ public class ArmarioService {
         return armarioRepository.save(armario);
     }
 
-    /**
-     * Lista todos os armários cadastrados no sistema.
-     * 
-     * @return Lista de todos os armários
-     */
     public List<Armario> listarTodos() {
         logger.debug("Listando todos os armários");
         return armarioRepository.findAll();
     }
 
-    /**
-     * Busca armários por status.
-     * 
-     * @param status Status dos armários a serem buscados
-     * @return Lista de armários com o status especificado
-     * @throws IllegalArgumentException se o status for nulo
-     */
     public List<Armario> buscarPorStatus(ArmarioStatus status) {
         if (status == null) {
             throw new IllegalArgumentException("Status não pode ser nulo");
@@ -105,13 +65,6 @@ public class ArmarioService {
         return armarioRepository.findByStatus(status);
     }
 
-    /**
-     * Busca armários por localização.
-     * 
-     * @param localizacao Localização dos armários
-     * @return Lista de armários na localização especificada
-     * @throws IllegalArgumentException se a localização for nula ou vazia
-     */
     public List<Armario> buscarPorLocalizacao(String localizacao) {
         if (localizacao == null || localizacao.trim().isEmpty()) {
             throw new IllegalArgumentException("Localização não pode ser nula ou vazia");
@@ -120,14 +73,6 @@ public class ArmarioService {
         return armarioRepository.findByLocalizacao(localizacao);
     }
 
-    /**
-     * Busca armários combinando status e localização.
-     * 
-     * @param status Status dos armários
-     * @param localizacao Localização dos armários
-     * @return Lista de armários que atendem aos dois critérios
-     * @throws IllegalArgumentException se status ou localização forem inválidos
-     */
     public List<Armario> buscarPorStatusELocalizacao(ArmarioStatus status, String localizacao) {
         if (status == null) {
             throw new IllegalArgumentException("Status não pode ser nulo");
@@ -139,14 +84,6 @@ public class ArmarioService {
         return armarioRepository.findByStatusAndLocalizacao(status, localizacao);
     }
 
-    /**
-     * Atualiza o status de um armário específico.
-     * 
-     * @param id ID do armário a ser atualizado
-     * @param novoStatus Novo status do armário
-     * @return Optional contendo o armário atualizado, ou vazio se não encontrado
-     * @throws IllegalArgumentException se o novo status for nulo
-     */
     @Auditavel(acao = "ATUALIZACAO_STATUS_ARMARIO", detalhes = "Atualização de status do armário")
     @Transactional
     public Optional<Armario> atualizarStatus(UUID id, ArmarioStatus novoStatus) {
@@ -165,13 +102,6 @@ public class ArmarioService {
                 });
     }
 
-    /**
-     * Busca um armário específico pelo ID.
-     * 
-     * @param id ID do armário a ser buscado
-     * @return Optional contendo o armário encontrado, ou vazio se não existir
-     * @throws IllegalArgumentException se o ID for nulo
-     */
     public Optional<Armario> buscarPorId(UUID id) {
         if (id == null) {
             throw new IllegalArgumentException("ID do armário não pode ser nulo");
@@ -180,13 +110,6 @@ public class ArmarioService {
         return armarioRepository.findById(id);
     }
 
-    /**
-     * Conta quantos armários existem com um determinado status.
-     * 
-     * @param status Status a ser contado
-     * @return Quantidade de armários com o status especificado
-     * @throws IllegalArgumentException se o status for nulo
-     */
     public long contarPorStatus(ArmarioStatus status) {
         if (status == null) {
             throw new IllegalArgumentException("Status não pode ser nulo");
@@ -194,4 +117,4 @@ public class ArmarioService {
         logger.debug("Contando armários com status: {}", status);
         return armarioRepository.countByStatus(status);
     }
-} 
+}

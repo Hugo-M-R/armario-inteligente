@@ -53,7 +53,6 @@ public class Usuario implements UserDetails {
     @Column(nullable = false)
     private LocalDateTime dataAtualizacao;
 
-    // Getters e Setters manuais
     public UUID getId() {
         return id;
     }

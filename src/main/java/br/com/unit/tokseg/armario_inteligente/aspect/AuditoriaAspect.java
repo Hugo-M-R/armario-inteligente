@@ -47,11 +47,8 @@ public class AuditoriaAspect {
 
         try {
             Object resultado = joinPoint.proceed();
-            
-            // Registra a auditoria
+
             registroAuditoriaService.salvar(registro);
-            
-            // Cria notificação se necessário
             criarNotificacaoSeNecessario(joinPoint, acao, resultado);
             
             return resultado;

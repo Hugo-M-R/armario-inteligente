@@ -27,7 +27,6 @@ public class RegistroAuditoria {
     private LocalDateTime dataHora;
 
     public RegistroAuditoria() {
-        // construtor padrão exigido pelo JPA
     }
 
     public RegistroAuditoria(int idRegistro, String acao, String detalhes, LocalDateTime dataHora){

@@ -12,41 +12,21 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-/**
- * Serviço responsável pela lógica de negócios relacionada aos compartimentos.
- * Implementa as operações de CRUD e regras específicas do domínio.
- */
 @Service
 public class CompartimentoService {
 
     private static final Logger logger = LoggerFactory.getLogger(CompartimentoService.class);
     private final CompartimentoRepository compartimentoRepository;
 
-    /**
-     * Construtor explícito para inicializar o repositório de compartimento.
-     * @param compartimentoRepository Repositório de compartimento a ser injetado
-     */
     public CompartimentoService(CompartimentoRepository compartimentoRepository) {
         this.compartimentoRepository = compartimentoRepository;
     }
 
-    /**
-     * Lista todos os compartimentos cadastrados no sistema.
-     * 
-     * @return Lista de todos os compartimentos
-     */
     public List<Compartimento> listarTodos() {
         logger.debug("Listando todos os compartimentos");
         return compartimentoRepository.findAll();
     }
 
-    /**
-     * Busca um compartimento específico pelo ID.
-     * 
-     * @param id ID do compartimento a ser buscado
-     * @return Optional contendo o compartimento encontrado, ou vazio se não existir
-     * @throws IllegalArgumentException se o ID for nulo
-     */
     public Optional<Compartimento> buscarPorId(UUID id) {
         if (id == null) {
             throw new IllegalArgumentException("ID do compartimento não pode ser nulo");
@@ -55,13 +35,6 @@ public class CompartimentoService {
         return compartimentoRepository.findById(id);
     }
 
-    /**
-     * Salva um novo compartimento no sistema.
-     * 
-     * @param compartimento Compartimento a ser salvo
-     * @return Compartimento salvo com ID gerado
-     * @throws IllegalArgumentException se o compartimento for nulo ou inválido
-     */
     @Transactional
     public Compartimento salvar(Compartimento compartimento) {
         if (compartimento == null) {
@@ -75,13 +48,6 @@ public class CompartimentoService {
         return compartimentoRepository.save(compartimento);
     }
 
-    /**
-     * Remove um compartimento do sistema.
-     * 
-     * @param id ID do compartimento a ser removido
-     * @throws IllegalArgumentException se o ID for nulo
-     * @throws EntityNotFoundException se o compartimento não for encontrado
-     */
     @Transactional
     public void remover(UUID id) {
         if (id == null) {
@@ -96,14 +62,6 @@ public class CompartimentoService {
         compartimentoRepository.deleteById(id);
     }
 
-    /**
-     * Atualiza o status de ocupação de um compartimento.
-     * 
-     * @param id ID do compartimento a ser atualizado
-     * @param ocupado Novo status de ocupação
-     * @return Optional contendo o compartimento atualizado, ou vazio se não encontrado
-     * @throws IllegalArgumentException se o ID for nulo
-     */
     @Transactional
     public Optional<Compartimento> atualizarOcupacao(UUID id, boolean ocupado) {
         if (id == null) {
@@ -117,4 +75,4 @@ public class CompartimentoService {
                     return compartimentoRepository.save(compartimento);
                 });
     }
-} 
+}
