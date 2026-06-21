@@ -1,10 +1,25 @@
 # Armário Inteligente
 
-Sistema de gerenciamento de armários inteligentes para condomínios, desenvolvido com Spring Boot, PostgreSQL (Neon) e Redis.
+Backend em Java + Spring Boot para o sistema **Armário Inteligente**.
 
-## 📋 Descrição
+## Sobre o projeto
 
 O Armário Inteligente é uma solução completa para gerenciamento de armários de encomendas em condomínios. O sistema permite o controle de armários, compartimentos, encomendas e usuários, além de oferecer notificações e registro de auditoria.
+
+Este repositório contém a API REST consumida pelo frontend e oferece autenticação JWT, gestão de encomendas com fluxo de retirada por código, notificações, auditoria automática e rate limit distribuído via Redis.
+
+[![Frontend](https://img.shields.io/badge/Frontend-visual--armario--inteligente-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/Hugo-M-R/visual-armario-inteligente)
+
+## Stack
+
+[![Java](https://img.shields.io/badge/Java-25-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)](https://openjdk.org/)
+[![Spring Boot](https://img.shields.io/badge/Spring_Boot-4.1.0-6DB33F?style=for-the-badge&logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
+[![Spring Security](https://img.shields.io/badge/Spring_Security-JWT-6DB33F?style=for-the-badge&logo=springsecurity&logoColor=white)](https://spring.io/projects/spring-security)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Neon-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Redis](https://img.shields.io/badge/Redis-8-DC382D?style=for-the-badge&logo=redis&logoColor=white)](https://redis.io/)
+[![Flyway](https://img.shields.io/badge/Flyway-CC0200?style=for-the-badge&logo=flyway&logoColor=white)](https://flywaydb.org/)
+[![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
+[![Maven](https://img.shields.io/badge/Maven-C71A36?style=for-the-badge&logo=apachemaven&logoColor=white)](https://maven.apache.org/)
 
 ## 🚀 Funcionalidades
 
@@ -38,20 +53,6 @@ O Armário Inteligente é uma solução completa para gerenciamento de armários
   - Histórico detalhado de ações
   - Rastreabilidade completa
   - Logs de sistema
-
-## 🛠️ Tecnologias Utilizadas
-
-- Java 25
-- Spring Boot 4.1.0
-- Spring Security com JWT
-- Spring Data JPA
-- PostgreSQL (Neon)
-- Redis 8 (rate limit distribuído)
-- Flyway (Migração de banco de dados)
-- Lombok
-- Maven
-- Docker e Docker Compose
-- Spring AOP (Aspectos para auditoria)
 
 ## 🚀 Roadmap para Ambiente de Produção
 
