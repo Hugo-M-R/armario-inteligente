@@ -29,23 +29,4 @@ public class RegistroAuditoriaController {
         return registroAuditoriaService.buscarPorId(id).map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
-
-    @PostMapping
-    public ResponseEntity<RegistroAuditoria> criar(@RequestBody RegistroAuditoria registro) {
-        try {
-            return ResponseEntity.ok(registroAuditoriaService.salvar(registro));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().build();
-        }
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> remover(@PathVariable Integer id) {
-        try {
-            registroAuditoriaService.remover(id);
-            return ResponseEntity.noContent().build();
-        } catch (Exception e) {
-            return ResponseEntity.notFound().build();
-        }
-    }
 }

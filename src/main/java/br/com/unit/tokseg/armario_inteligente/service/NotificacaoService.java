@@ -1,7 +1,10 @@
 package br.com.unit.tokseg.armario_inteligente.service;
 
+import br.com.unit.tokseg.armario_inteligente.exception.ForbiddenOperationException;
 import br.com.unit.tokseg.armario_inteligente.model.Notificacao;
+import br.com.unit.tokseg.armario_inteligente.model.Usuario;
 import br.com.unit.tokseg.armario_inteligente.repository.NotificacaoRepository;
+import br.com.unit.tokseg.armario_inteligente.util.SecurityUtils;
 import jakarta.persistence.EntityNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,31 +40,48 @@ public class NotificacaoService {
         return notificacaoRepository.save(notificacao);
     }
 
-    public List<Notificacao> listarTodas() {
-        logger.debug("Listando todas as notificações");
-        return notificacaoRepository.findAll();
+    public List<Notificacao> listarParaUsuario(Usuario requester) {
+        if (SecurityUtils.isPorteiro(requester)) {
+            throw new ForbiddenOperationException("Porteiros não têm acesso a notificações");
+        }
+        if (SecurityUtils.isAdmin(requester)) {
+            logger.debug("Listando todas as notificações");
+            return notificacaoRepository.findAll();
+        }
+        logger.debug("Listando notificações do usuário: {}", requester.getId());
+        return notificacaoRepository.findByUsuarioId(requester.getId());
     }
 
-    public Optional<Notificacao> buscarPorId(String id) {
+    public Optional<Notificacao> buscarPorId(String id, Usuario requester) {
         if (id == null) {
             throw new IllegalArgumentException("ID da notificação não pode ser nulo");
         }
+        if (SecurityUtils.isPorteiro(requester)) {
+            throw new ForbiddenOperationException("Porteiros não têm acesso a notificações");
+        }
         logger.debug("Buscando notificação com ID: {}", id);
-        return notificacaoRepository.findById(id);
+        Optional<Notificacao> notificacao = notificacaoRepository.findById(id);
+        if (notificacao.isEmpty()) {
+            return Optional.empty();
+        }
+        if (SecurityUtils.isMorador(requester)
+                && (notificacao.get().getUsuario() == null
+                || !notificacao.get().getUsuario().getId().equals(requester.getId()))) {
+            return Optional.empty();
+        }
+        return notificacao;
     }
 
     @Transactional
-    public Optional<Notificacao> marcarComoLida(String id) {
-        if (id == null) {
-            throw new IllegalArgumentException("ID da notificação não pode ser nulo");
+    public Optional<Notificacao> marcarComoLida(String id, Usuario requester) {
+        Optional<Notificacao> notificacao = buscarPorId(id, requester);
+        if (notificacao.isEmpty()) {
+            return Optional.empty();
         }
-
         logger.info("Marcando notificação como lida: {}", id);
-        return notificacaoRepository.findById(id)
-                .map(notificacao -> {
-                    notificacao.setLida(true);
-                    return notificacaoRepository.save(notificacao);
-                });
+        Notificacao atualizada = notificacao.get();
+        atualizada.setLida(true);
+        return Optional.of(notificacaoRepository.save(atualizada));
     }
 
     @Transactional
@@ -69,7 +89,7 @@ public class NotificacaoService {
         if (id == null) {
             throw new IllegalArgumentException("ID da notificação não pode ser nulo");
         }
-        
+
         if (!notificacaoRepository.existsById(id)) {
             throw new EntityNotFoundException("Notificação não encontrada com ID: " + id);
         }

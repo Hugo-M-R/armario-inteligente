@@ -1,16 +1,19 @@
 package br.com.unit.tokseg.armario_inteligente.service;
 
+import br.com.unit.tokseg.armario_inteligente.annotation.Auditavel;
 import br.com.unit.tokseg.armario_inteligente.dto.AuthenticationRequest;
 import br.com.unit.tokseg.armario_inteligente.dto.AuthenticationResponse;
 import br.com.unit.tokseg.armario_inteligente.dto.RegisterRequest;
-import br.com.unit.tokseg.armario_inteligente.model.Usuario;
+import br.com.unit.tokseg.armario_inteligente.dto.UsuarioResponse;
+import br.com.unit.tokseg.armario_inteligente.util.SecurityUtils;
+import br.com.unit.tokseg.armario_inteligente.exception.ForbiddenOperationException;
 import br.com.unit.tokseg.armario_inteligente.model.TipoUsuarioEnum;
+import br.com.unit.tokseg.armario_inteligente.model.Usuario;
 import br.com.unit.tokseg.armario_inteligente.repository.UsuarioRepository;
-import br.com.unit.tokseg.armario_inteligente.annotation.Auditavel;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -40,8 +43,12 @@ public class AuthenticationService {
 
     @Auditavel(acao = "REGISTRO_USUARIO", detalhes = "Registro de novo usuário no sistema")
     @Transactional
-    public AuthenticationResponse register(RegisterRequest request) {
+    public Usuario register(RegisterRequest request) {
         logger.info("Iniciando registro de novo usuário: {}", request.email());
+
+        if (request.tipo() != null && request.tipo() != TipoUsuarioEnum.MORADOR) {
+            throw new ForbiddenOperationException("Registro público permitido apenas para usuários do tipo MORADOR");
+        }
 
         if (usuarioRepository.findByEmail(request.email()).isPresent()) {
             logger.warn("Tentativa de registro com email já existente: {}", request.email());
@@ -52,12 +59,16 @@ public class AuthenticationService {
         usuario.setNome(request.nome());
         usuario.setEmail(request.email());
         usuario.setSenha(passwordEncoder.encode(request.senha()));
-        usuario.setTelefone(request.telefone());
-        usuario.setTipo(request.tipo() != null ? request.tipo() : TipoUsuarioEnum.MORADOR);
+        usuario.setTelefone(request.telefone() != null ? request.telefone() : "");
+        usuario.setTipo(TipoUsuarioEnum.MORADOR);
 
-        usuarioRepository.save(usuario);
+        usuario = usuarioRepository.save(usuario);
         logger.info("Usuário registrado com sucesso: {}", usuario.getEmail());
+        return usuario;
+    }
 
+    public AuthenticationResponse registerAndAuthenticate(RegisterRequest request) {
+        Usuario usuario = register(request);
         String jwtToken = jwtService.generateToken(usuario);
         return new AuthenticationResponse(jwtToken);
     }
@@ -75,7 +86,7 @@ public class AuthenticationService {
             );
 
             Usuario usuario = usuarioRepository.findByEmail(request.email())
-                    .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado"));
+                    .orElseThrow(() -> new BadCredentialsException("Credenciais inválidas"));
 
             String jwtToken = jwtService.generateToken(usuario);
             logger.info("Usuário autenticado com sucesso: {}", usuario.getEmail());
@@ -84,7 +95,11 @@ public class AuthenticationService {
 
         } catch (AuthenticationException e) {
             logger.error("Falha na autenticação do usuário: {}", request.email(), e);
-            throw new IllegalArgumentException("Credenciais inválidas");
+            throw new BadCredentialsException("Credenciais inválidas");
         }
+    }
+
+    public UsuarioResponse getCurrentUser() {
+        return UsuarioResponse.from(SecurityUtils.getCurrentUsuario());
     }
 }

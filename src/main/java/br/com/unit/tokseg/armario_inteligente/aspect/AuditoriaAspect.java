@@ -2,6 +2,7 @@ package br.com.unit.tokseg.armario_inteligente.aspect;
 
 import br.com.unit.tokseg.armario_inteligente.annotation.Auditavel;
 import br.com.unit.tokseg.armario_inteligente.model.*;
+import br.com.unit.tokseg.armario_inteligente.repository.UsuarioRepository;
 import br.com.unit.tokseg.armario_inteligente.service.NotificacaoService;
 import br.com.unit.tokseg.armario_inteligente.service.RegistroAuditoriaService;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -17,25 +18,28 @@ import java.util.UUID;
 @Aspect
 @Component
 public class AuditoriaAspect {
-    
+
     private static final Logger logger = LoggerFactory.getLogger(AuditoriaAspect.class);
     private final RegistroAuditoriaService registroAuditoriaService;
     private final NotificacaoService notificacaoService;
+    private final UsuarioRepository usuarioRepository;
 
     public AuditoriaAspect(
             RegistroAuditoriaService registroAuditoriaService,
-            NotificacaoService notificacaoService) {
+            NotificacaoService notificacaoService,
+            UsuarioRepository usuarioRepository) {
         this.registroAuditoriaService = registroAuditoriaService;
         this.notificacaoService = notificacaoService;
+        this.usuarioRepository = usuarioRepository;
     }
 
     @Around("@annotation(auditavel)")
     public Object registrarAuditoria(ProceedingJoinPoint joinPoint, Auditavel auditavel) throws Throwable {
-        String acao = auditavel.acao().isEmpty() ? 
+        String acao = auditavel.acao().isEmpty() ?
             joinPoint.getSignature().getName() : auditavel.acao();
-        
+
         String detalhes = auditavel.detalhes().isEmpty() ?
-            String.format("Método: %s, Classe: %s", 
+            String.format("Método: %s, Classe: %s",
                 joinPoint.getSignature().getName(),
                 joinPoint.getTarget().getClass().getSimpleName()) :
             auditavel.detalhes();
@@ -49,8 +53,8 @@ public class AuditoriaAspect {
             Object resultado = joinPoint.proceed();
 
             registroAuditoriaService.salvar(registro);
-            criarNotificacaoSeNecessario(joinPoint, acao, resultado);
-            
+            criarNotificacaoSeNecessario(acao, resultado);
+
             return resultado;
         } catch (Exception e) {
             registro.setDetalhes(registro.getDetalhes() + " - Erro: " + e.getMessage());
@@ -59,23 +63,21 @@ public class AuditoriaAspect {
         }
     }
 
-    private void criarNotificacaoSeNecessario(ProceedingJoinPoint joinPoint, String acao, Object resultado) {
+    private void criarNotificacaoSeNecessario(String acao, Object resultado) {
         try {
-            if (resultado instanceof Usuario) {
-                Usuario usuario = (Usuario) resultado;
+            if (resultado instanceof Usuario usuario) {
                 if (acao.contains("REGISTRO_USUARIO")) {
                     criarNotificacaoAdmin("Novo usuário registrado: " + usuario.getEmail());
                 }
-            } else if (resultado instanceof Armario) {
-                Armario armario = (Armario) resultado;
+            } else if (resultado instanceof Armario armario) {
                 if (acao.contains("CADASTRO_ARMARIO")) {
                     criarNotificacaoAdmin("Novo armário cadastrado: " + armario.getNumero());
                 }
-            } else if (resultado instanceof Encomenda) {
-                Encomenda encomenda = (Encomenda) resultado;
-                if (acao.contains("CADASTRO_ENCOMENDA")) {
-                    criarNotificacaoUsuario(encomenda.getUsuario(), 
-                        "Nova encomenda registrada para você no armário " + 
+            } else if (resultado instanceof Encomenda encomenda) {
+                if (acao.contains("CADASTRO_ENCOMENDA") && encomenda.getUsuario() != null
+                        && encomenda.getArmario() != null) {
+                    criarNotificacaoUsuario(encomenda.getUsuario(),
+                        "Nova encomenda registrada para você no armário " +
                         encomenda.getArmario().getNumero());
                 }
             }
@@ -85,22 +87,27 @@ public class AuditoriaAspect {
     }
 
     private void criarNotificacaoAdmin(String mensagem) {
-        // TODO: Implementar busca de usuários admin e criar notificação para cada um
-        logger.info("Notificação para admin: {}", mensagem);
+        usuarioRepository.findByTipo(TipoUsuarioEnum.ADMIN).forEach(admin -> {
+            Notificacao notificacao = new Notificacao(
+                    UUID.randomUUID().toString(),
+                    admin,
+                    mensagem,
+                    LocalDateTime.now()
+            );
+            notificacao.setLida(false);
+            notificacaoService.salvar(notificacao);
+        });
+        logger.info("Notificação para admins: {}", mensagem);
     }
 
     private void criarNotificacaoUsuario(Usuario usuario, String mensagem) {
-        String idNotificacao = UUID.randomUUID().toString();
-        LocalDateTime dataEnvio = LocalDateTime.now();
-        
         Notificacao notificacao = new Notificacao(
-            idNotificacao,
+            UUID.randomUUID().toString(),
             usuario,
             mensagem,
-            dataEnvio
+            LocalDateTime.now()
         );
         notificacao.setLida(false);
-
         notificacaoService.salvar(notificacao);
     }
-} 
+}

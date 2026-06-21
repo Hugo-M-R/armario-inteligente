@@ -10,20 +10,24 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: docker
       DATABASE_URL: ${DATABASE_URL}
-      SPRING_DATASOURCE_USERNAME: ${DATABASE_USER}
-      SPRING_DATASOURCE_PASSWORD: ${DATABASE_PASSWORD}
-      SPRING_FLYWAY_USER: ${DATABASE_USER}
-      SPRING_FLYWAY_PASSWORD: ${DATABASE_PASSWORD}
+      DATABASE_USER: ${DATABASE_USER}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
       REDIS_HOST: redis
       REDIS_PORT: ${REDIS_PORT:-6379}
       SPRING_JPA_HIBERNATE_DDL_AUTO: validate
-      SPRING_FLYWAY_ENABLED: ${SPRING_FLYWAY_ENABLED:-false}
+      SPRING_FLYWAY_ENABLED: ${SPRING_FLYWAY_ENABLED:-true}
       SPRING_FLYWAY_BASELINE_ON_MIGRATE: ${SPRING_FLYWAY_BASELINE_ON_MIGRATE:-true}
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRATION: ${JWT_EXPIRATION:-86400000}
     depends_on:
       redis:
         condition: service_started
+    healthcheck:
+      test: ['CMD-SHELL', 'curl -f http://localhost:8080/actuator/health || exit 1']
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
     networks:
       - app-network
 

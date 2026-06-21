@@ -1,8 +1,11 @@
 package br.com.unit.tokseg.armario_inteligente.controller;
 
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.method.MethodValidationException;
 import org.springframework.web.ErrorResponseException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -47,6 +50,36 @@ public class GlobalExceptionHandler {
         return problem;
     }
 
+    @ExceptionHandler(EntityNotFoundException.class)
+    public ProblemDetail handleEntityNotFound(EntityNotFoundException ex, HttpServletRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.NOT_FOUND);
+        problem.setTitle("Recurso não encontrado");
+        problem.setDetail(ex.getMessage());
+        problem.setType(URI.create("about:blank"));
+        problem.setProperty("path", request.getRequestURI());
+        return problem;
+    }
+
+    @ExceptionHandler(BadCredentialsException.class)
+    public ProblemDetail handleBadCredentials(BadCredentialsException ex, HttpServletRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.UNAUTHORIZED);
+        problem.setTitle("Não autorizado");
+        problem.setDetail(ex.getMessage());
+        problem.setType(URI.create("about:blank"));
+        problem.setProperty("path", request.getRequestURI());
+        return problem;
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ProblemDetail handleAccessDenied(AccessDeniedException ex, HttpServletRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.FORBIDDEN);
+        problem.setTitle("Acesso negado");
+        problem.setDetail(ex.getMessage());
+        problem.setType(URI.create("about:blank"));
+        problem.setProperty("path", request.getRequestURI());
+        return problem;
+    }
+
     @ExceptionHandler(ErrorResponseException.class)
     public ProblemDetail handleErrorResponse(ErrorResponseException ex, HttpServletRequest request) {
         ProblemDetail problem = ex.getBody();
@@ -60,4 +93,3 @@ public class GlobalExceptionHandler {
     private record ValidationFieldError(String field, String message) {
     }
 }
-

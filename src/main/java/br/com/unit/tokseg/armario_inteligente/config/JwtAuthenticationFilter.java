@@ -39,6 +39,30 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+            return true;
+        }
+        return isPublicAuthPath(request) || isPublicPath(request.getServletPath());
+    }
+
+    private static boolean isPublicPath(String path) {
+        return path.startsWith("/swagger-ui")
+                || path.equals("/swagger-ui.html")
+                || path.startsWith("/v3/api-docs")
+                || path.equals("/actuator/health")
+                || path.startsWith("/h2-console");
+    }
+
+    private static boolean isPublicAuthPath(HttpServletRequest request) {
+        if (!"POST".equalsIgnoreCase(request.getMethod())) {
+            return false;
+        }
+        String path = request.getServletPath();
+        return "/api/v1/auth/register".equals(path) || "/api/v1/auth/authenticate".equals(path);
+    }
+
+    @Override
     protected void doFilterInternal(
             @NonNull HttpServletRequest request,
             @NonNull HttpServletResponse response,

@@ -212,7 +212,8 @@ cp .env.example .env
 
 3. Ajuste no arquivo `.env`:
 - `DATABASE_URL` para a URL JDBC do Neon (com `sslmode=require`)
-- `JWT_SECRET` com um segredo forte
+- `JWT_SECRET` em Base64 com no mínimo 256 bits (gere com `openssl rand -base64 32`)
+- `REDIS_HOST` (`localhost` localmente; `redis` no Docker Compose)
 
 4. Execute com Docker:
 ```bash
@@ -221,6 +222,9 @@ docker compose up -d --build
 
 O sistema estará disponível em:
 - API: http://localhost:8080
+- Swagger UI: http://localhost:8080/swagger-ui.html
+- OpenAPI JSON: http://localhost:8080/v3/api-docs
+- Health check: http://localhost:8080/actuator/health
 - Redis: localhost:6379
 
 ## 📦 Estrutura do Projeto
@@ -232,15 +236,14 @@ O sistema estará disponível em:
 │   │   ├── java/
 │   │   │   └── br/com/unit/tokseg/armario_inteligente/
 │   │   │       ├── aspect/          # Aspectos (Auditoria)
-│   │   │       ├── config/          # Configurações
-│   │   │       ├── controller/      # Controllers REST
-│   │   │       ├── dto/            # Objetos de transferência
-│   │   │       ├── exception/      # Tratamento de exceções
-│   │   │       ├── model/          # Entidades
-│   │   │       ├── repository/     # Repositórios JPA
-│   │   │       ├── security/       # Configurações de segurança
-│   │   │       ├── service/        # Serviços
-│   │   │       └── util/           # Utilitários
+│   │   │       ├── config/          # Configurações (Security, JWT, OpenAPI)
+│   │   │       ├── controller/      # Controllers REST e GlobalExceptionHandler
+│   │   │       ├── dto/             # Objetos de transferência
+│   │   │       ├── exception/       # Exceções customizadas
+│   │   │       ├── model/           # Entidades
+│   │   │       ├── repository/      # Repositórios JPA
+│   │   │       ├── service/         # Serviços
+│   │   │       └── util/            # Utilitários (SecurityUtils)
 │   │   └── resources/
 │   │       ├── db/migration/       # Scripts Flyway
 │   │       ├── application.properties
@@ -259,19 +262,20 @@ O sistema estará disponível em:
 
 ### Autenticação
 
-#### Registrar Administrador
+#### Registrar Morador (público)
 ```http
 POST http://localhost:8080/api/v1/auth/register
 Content-Type: application/json
 
 {
-    "nome": "Admin Teste",
-    "email": "admin@teste.com",
-    "senha": "Admin@123",
-    "telefone": "11999999999",
-    "tipo": "ADMIN"
+    "nome": "Morador Teste",
+    "email": "morador@teste.com",
+    "senha": "Morador@123",
+    "telefone": "11999999999"
 }
 ```
+
+> Registro público aceita apenas usuários do tipo `MORADOR`. `ADMIN` e `PORTEIRO` são criados por administradores autenticados.
 
 #### Login
 ```http
@@ -279,14 +283,20 @@ POST http://localhost:8080/api/v1/auth/authenticate
 Content-Type: application/json
 
 {
-    "email": "admin@teste.com",
-    "senha": "Admin@123"
+    "email": "morador@teste.com",
+    "senha": "Morador@123"
 }
+```
+
+#### Usuário autenticado
+```http
+GET http://localhost:8080/api/v1/auth/me
+Authorization: Bearer {token}
 ```
 
 ### Usuários
 
-#### Criar Morador
+#### Criar Morador (admin/porteiro autenticado)
 ```http
 POST http://localhost:8080/api/usuarios
 Authorization: Bearer {token}
@@ -298,6 +308,17 @@ Content-Type: application/json
     "senha": "Morador@123",
     "telefone": "11988888888",
     "tipo": "MORADOR"
+}
+```
+
+#### Ativar/desativar usuário (admin)
+```http
+PATCH http://localhost:8080/api/usuarios/{id}/ativo
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+    "ativo": false
 }
 ```
 
@@ -330,21 +351,46 @@ Authorization: Bearer {token}
 
 ### Encomendas
 
-#### Registrar Encomenda
+#### Registrar Encomenda (admin/porteiro)
 ```http
 POST http://localhost:8080/api/encomendas
 Authorization: Bearer {token}
 Content-Type: application/json
 
 {
+    "idEncomenda": "E001",
     "descricao": "Caixa Amazon",
     "remetente": "Amazon",
-    "armario": {
-        "id": "uuid-do-armario"
-    },
-    "usuario": {
-        "id": "uuid-do-usuario"
-    }
+    "armarioId": "uuid-do-armario",
+    "usuarioId": "uuid-do-usuario"
+}
+```
+
+#### Gerar código de retirada (admin/porteiro)
+```http
+POST http://localhost:8080/api/encomendas/{id}/gerar-codigo
+Authorization: Bearer {token}
+```
+
+#### Validar código (morador autenticado)
+```http
+POST http://localhost:8080/api/encomendas/{id}/validar-codigo
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+    "codigo": "123456"
+}
+```
+
+#### Retirar encomenda
+```http
+POST http://localhost:8080/api/encomendas/{id}/retirar
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+    "codigo": "123456"
 }
 ```
 
@@ -359,6 +405,20 @@ Authorization: Bearer {token}
 #### Listar Notificações
 ```http
 GET http://localhost:8080/api/notificacoes
+Authorization: Bearer {token}
+```
+
+#### Marcar notificação como lida
+```http
+PATCH http://localhost:8080/api/notificacoes/{id}/lida
+Authorization: Bearer {token}
+```
+
+### Compartimentos
+
+#### Listar Compartimentos
+```http
+GET http://localhost:8080/api/compartimentos
 Authorization: Bearer {token}
 ```
 
@@ -382,18 +442,30 @@ Authorization: Bearer {token}
 - Registro de auditoria automático
 - Logs de segurança
 
+- Registro público restrito a `MORADOR`
+- Ownership de encomendas e notificações por usuário autenticado
+- Auditoria somente leitura via API (escrita automática por AOP)
+- Documentação interativa via Swagger/OpenAPI
+- Health check via Spring Boot Actuator
+
 ## 🧪 Testes
 
 Execute os testes com:
 ```bash
-# Testes unitários
-mvn test
-
-# Testes de integração
-mvn verify
+./mvnw test
+./mvnw verify
 ```
 
+A suíte inclui testes unitários de segurança, ownership, rate limit e fluxo de retirada de encomendas.
+
 ## 📝 Notas de Atualização
+
+### Versão 1.1.0
+- Segurança reforçada: registro público MORADOR, hash BCrypt centralizado, IDOR corrigido
+- Swagger/OpenAPI, rate limit Redis, CORS e headers de segurança configuráveis
+- Fluxo MVP de retirada de encomendas (gerar/validar/retirar código)
+- Endpoints de ativar usuário e marcar notificação como lida
+- Spring Boot Actuator, CI GitHub Actions e testes automatizados
 
 ### Versão 1.0.0
 - Implementação do sistema de auditoria automática

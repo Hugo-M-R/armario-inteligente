@@ -1,2 +1,0 @@
--- Script legado mantido para referência local.
--- Ambiente atual usa PostgreSQL externo (Neon), sem inicialização local via Docker.

@@ -16,6 +16,9 @@ COPY ./src ./src
 RUN mvn clean package -DskipTests
 
 FROM eclipse-temurin:25-jre-alpine
+RUN apk add --no-cache curl
 COPY --from=build-image /app/source/target/*.jar /app/api.jar
 EXPOSE 8080
+HEALTHCHECK --interval=30s --timeout=5s --retries=5 --start-period=60s \
+  CMD curl -f http://localhost:8080/actuator/health || exit 1
 ENTRYPOINT ["java", "-jar", "/app/api.jar"]

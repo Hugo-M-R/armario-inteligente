@@ -12,7 +12,7 @@
 	<artifactId>armario-inteligente</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>armario-inteligente</name>
-	<description>Demo project for Spring Boot</description>
+	<description>Sistema de gerenciamento de armários inteligentes para condomínios</description>
 	<url />
 	<licenses>
 		<license />
@@ -109,6 +109,15 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-configuration-processor</artifactId>
 			<optional>true</optional>
+		</dependency>
+		<dependency>
+			<groupId>org.springdoc</groupId>
+			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+			<version>3.0.3</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-actuator</artifactId>
 		</dependency>
 	</dependencies>
 

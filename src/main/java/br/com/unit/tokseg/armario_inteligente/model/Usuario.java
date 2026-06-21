@@ -1,5 +1,6 @@
 package br.com.unit.tokseg.armario_inteligente.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -29,6 +30,7 @@ public class Usuario implements UserDetails {
     @Column(nullable = false, unique = true)
     private String email;
     
+    @JsonIgnore
     @Column(nullable = false)
     private String senha;
     

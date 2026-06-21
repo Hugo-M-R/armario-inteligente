@@ -21,6 +21,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
+import java.util.stream.Stream;
 
 @Configuration
 @EnableWebSecurity
@@ -52,7 +53,14 @@ public class SecurityConfiguration {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                .requestMatchers("/api/v1/auth/**", "/h2-console/**").permitAll()
+                .requestMatchers(
+                        "/swagger-ui/**",
+                        "/swagger-ui.html",
+                        "/v3/api-docs/**",
+                        "/actuator/health"
+                ).permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/auth/register", "/api/v1/auth/authenticate").permitAll()
+                .requestMatchers("/h2-console/**").permitAll()
                 .requestMatchers("/api/armarios/**").hasAnyRole("ADMIN", "PORTEIRO", "MORADOR")
                 .requestMatchers("/api/encomendas/**").hasAnyRole("ADMIN", "PORTEIRO", "MORADOR")
                 .anyRequest().authenticated()
@@ -84,14 +92,53 @@ public class SecurityConfiguration {
     public CorsConfigurationSource corsConfigurationSource() {
         SecurityProperties.Cors cors = securityProperties.cors();
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(cors != null ? cors.allowedOrigins() : List.of("http://localhost:3000"));
-        configuration.setAllowedMethods(cors != null ? cors.allowedMethods() : List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(cors != null ? cors.allowedHeaders() : List.of("Authorization", "Content-Type"));
-        configuration.setAllowCredentials(cors != null && cors.allowCredentials());
+        configuration.setAllowedOrigins(resolveAllowedOrigins(cors));
+        configuration.setAllowedMethods(resolveAllowedMethods(cors));
+        configuration.setAllowedHeaders(resolveAllowedHeaders(cors));
+        configuration.setAllowCredentials(cors == null || cors.allowCredentials());
+        configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
+    }
+
+    private static List<String> resolveAllowedOrigins(SecurityProperties.Cors cors) {
+        List<String> configured = cors != null ? cors.allowedOrigins() : null;
+        List<String> origins = filterBlank(configured);
+        if (origins.isEmpty()) {
+            return List.of("http://localhost:3000", "http://127.0.0.1:3000");
+        }
+        return origins;
+    }
+
+    private static List<String> resolveAllowedMethods(SecurityProperties.Cors cors) {
+        List<String> configured = cors != null ? cors.allowedMethods() : null;
+        List<String> methods = filterBlank(configured);
+        if (methods.isEmpty()) {
+            return List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS");
+        }
+        return methods;
+    }
+
+    private static List<String> resolveAllowedHeaders(SecurityProperties.Cors cors) {
+        List<String> configured = cors != null ? cors.allowedHeaders() : null;
+        List<String> headers = filterBlank(configured);
+        if (headers.isEmpty()) {
+            return List.of("Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With");
+        }
+        return headers;
+    }
+
+    private static List<String> filterBlank(List<String> values) {
+        if (values == null || values.isEmpty()) {
+            return List.of();
+        }
+        return values.stream()
+                .flatMap(value -> Stream.of(value.split(",")))
+                .map(String::trim)
+                .filter(value -> !value.isEmpty())
+                .toList();
     }
 
     private DaoAuthenticationProvider daoAuthenticationProvider() {
